@@ -4,6 +4,10 @@ import { UserCreatedEvent } from '../../domain/events/user-created.event';
 import { PasswordGeneratorService } from '../services/password-generator.service';
 import { UpdateUserPasswordUseCase } from '../use-cases/update-user-password.use-case';
 
+export interface UserCreatedHandlerResult {
+  temporaryPassword?: string;
+}
+
 @Injectable()
 export class UserCreatedHandler {
   private readonly logger = new Logger(UserCreatedHandler.name);
@@ -14,7 +18,9 @@ export class UserCreatedHandler {
   ) {}
 
   @OnEvent('user.created')
-  async handle(event: UserCreatedEvent): Promise<void> {
+  async handle(
+    event: UserCreatedEvent,
+  ): Promise<UserCreatedHandlerResult | undefined> {
     if (event.hasPassword) {
       this.logger.log(
         `User ${event.userId} already has a password; skipping generation`,
@@ -23,16 +29,20 @@ export class UserCreatedHandler {
     }
 
     this.logger.log(
-      `Generating secure password for user ${event.userId} (${event.email})`,
+      `Generating temporary password for user ${event.userId} (${event.email})`,
     );
 
-    const { hashed } = await this.passwordGenerator.generateSecurePassword();
+    const { plain, hashed } =
+      await this.passwordGenerator.generateSecurePassword();
 
     await this.updateUserPassword.execute({
       userId: event.userId,
       hashedPassword: hashed,
+      mustChangePassword: true,
     });
 
     this.logger.log(`Password updated in Firebase for user ${event.userId}`);
+
+    return { temporaryPassword: plain };
   }
 }

@@ -1,8 +1,15 @@
+import {
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { User } from '../../domain/entities/user.entity';
 import { UserRepository } from '../../domain/repositories/user.repository.interface';
 import { PasswordGeneratorService } from '../services/password-generator.service';
-import { CreateUserUseCase } from './create-user.use-case';
+import {
+  CreateUserUseCase,
+  TEMPORARY_PASSWORD_WARNING,
+} from './create-user.use-case';
 
 describe('CreateUserUseCase', () => {
   let useCase: CreateUserUseCase;
@@ -14,8 +21,11 @@ describe('CreateUserUseCase', () => {
     userRepository = {
       create: jest.fn(),
       findById: jest.fn(),
-      findAll: jest.fn(),
+      findByEmail: jest.fn().mockResolvedValue(null),
+      findByUsername: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     };
     passwordGenerator = {
       generateSecurePassword: jest.fn(),
@@ -33,8 +43,11 @@ describe('CreateUserUseCase', () => {
     );
   });
 
-  it('should create a user without password and emit user.created', async () => {
+  it('should create a user without password and return the temporary password once', async () => {
     userRepository.create.mockImplementation(async (user) => user);
+    eventEmitter.emitAsync.mockResolvedValue([
+      { temporaryPassword: 'TempPass1!' },
+    ]);
 
     const result = await useCase.execute({
       username: 'alice',
@@ -58,6 +71,9 @@ describe('CreateUserUseCase', () => {
       }),
     );
     expect(result.passwordGenerated).toBe(true);
+    expect(result.mustChangePassword).toBe(true);
+    expect(result.temporaryPassword).toBe('TempPass1!');
+    expect(result.message).toBe(TEMPORARY_PASSWORD_WARNING);
     expect(result.id).toBeDefined();
   });
 
@@ -84,5 +100,49 @@ describe('CreateUserUseCase', () => {
       expect.objectContaining({ hasPassword: true }),
     );
     expect(result.passwordGenerated).toBe(false);
+    expect(result.mustChangePassword).toBe(false);
+    expect(result.temporaryPassword).toBeUndefined();
+    expect(result.message).toBeUndefined();
+  });
+
+  it('should reject duplicate emails', async () => {
+    userRepository.findByEmail.mockResolvedValue(
+      User.create({
+        id: 'existing',
+        username: 'other',
+        email: 'alice@example.com',
+      }),
+    );
+
+    await expect(
+      useCase.execute({ username: 'alice', email: 'alice@example.com' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(userRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should reject duplicate usernames', async () => {
+    userRepository.findByUsername.mockResolvedValue(
+      User.create({
+        id: 'existing',
+        username: 'alice',
+        email: 'other@example.com',
+      }),
+    );
+
+    await expect(
+      useCase.execute({ username: 'alice', email: 'alice@example.com' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(userRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should delete the user when password generation fails', async () => {
+    userRepository.create.mockImplementation(async (user) => user);
+    eventEmitter.emitAsync.mockRejectedValue(new Error('handler failed'));
+
+    await expect(
+      useCase.execute({ username: 'alice', email: 'alice@example.com' }),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
+
+    expect(userRepository.delete).toHaveBeenCalledWith(expect.any(String));
   });
 });

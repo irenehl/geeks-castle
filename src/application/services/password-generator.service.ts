@@ -39,7 +39,6 @@ export class PasswordGeneratorService {
       password += charset[bytes[i]! % charset.length];
     }
 
-    // Ensure at least one of each required character class
     const lower = 'abcdefghijklmnopqrstuvwxyz';
     const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const digits = '0123456789';

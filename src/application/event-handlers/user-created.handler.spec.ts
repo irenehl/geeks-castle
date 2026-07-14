@@ -21,13 +21,13 @@ describe('UserCreatedHandler', () => {
     handler = new UserCreatedHandler(passwordGenerator, updateUserPassword);
   });
 
-  it('should generate and persist a password when the user has none', async () => {
+  it('should generate, persist, and return the temporary password when the user has none', async () => {
     passwordGenerator.generateSecurePassword.mockResolvedValue({
       plain: 'Generated1!',
       hashed: 'hashed-generated',
     });
 
-    await handler.handle(
+    const result = await handler.handle(
       new UserCreatedEvent('user-1', 'alice', 'alice@example.com', false),
     );
 
@@ -35,15 +35,18 @@ describe('UserCreatedHandler', () => {
     expect(updateUserPassword.execute).toHaveBeenCalledWith({
       userId: 'user-1',
       hashedPassword: 'hashed-generated',
+      mustChangePassword: true,
     });
+    expect(result).toEqual({ temporaryPassword: 'Generated1!' });
   });
 
   it('should skip generation when the user already has a password', async () => {
-    await handler.handle(
+    const result = await handler.handle(
       new UserCreatedEvent('user-2', 'bob', 'bob@example.com', true),
     );
 
     expect(passwordGenerator.generateSecurePassword).not.toHaveBeenCalled();
     expect(updateUserPassword.execute).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
   });
 });

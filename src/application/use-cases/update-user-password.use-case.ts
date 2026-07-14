@@ -6,6 +6,7 @@ import type { UserRepository } from '../../domain/repositories/user.repository.i
 export interface UpdateUserPasswordInput {
   userId: string;
   hashedPassword: string;
+  mustChangePassword?: boolean;
 }
 
 @Injectable()
@@ -22,7 +23,10 @@ export class UpdateUserPasswordUseCase {
       throw new NotFoundException(`User with id ${input.userId} not found`);
     }
 
-    user.updatePassword(input.hashedPassword);
+    user.updatePassword(
+      input.hashedPassword,
+      input.mustChangePassword ?? false,
+    );
     return this.userRepository.update(user);
   }
 }

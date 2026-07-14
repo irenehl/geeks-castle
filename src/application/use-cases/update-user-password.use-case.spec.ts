@@ -11,8 +11,11 @@ describe('UpdateUserPasswordUseCase', () => {
     userRepository = {
       create: jest.fn(),
       findById: jest.fn(),
-      findAll: jest.fn(),
+      findByEmail: jest.fn(),
+      findByUsername: jest.fn(),
+      findMany: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     };
     useCase = new UpdateUserPasswordUseCase(userRepository);
   });
@@ -29,11 +32,17 @@ describe('UpdateUserPasswordUseCase', () => {
     const updated = await useCase.execute({
       userId: 'user-1',
       hashedPassword: 'new-hash',
+      mustChangePassword: true,
     });
 
     expect(updated.password).toBe('new-hash');
+    expect(updated.mustChangePassword).toBe(true);
     expect(userRepository.update).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'user-1', password: 'new-hash' }),
+      expect.objectContaining({
+        id: 'user-1',
+        password: 'new-hash',
+        mustChangePassword: true,
+      }),
     );
   });
 
