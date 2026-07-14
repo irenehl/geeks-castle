@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+dist/
+coverage/
+*.log
+
+# Environment
+.env
+.env.local
+!.env.example
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Secrets
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+
+DESIGN.md
+PRODUCT.md
