@@ -4,6 +4,9 @@ dist/
 coverage/
 *.log
 
+# Generated Swagger UI assets (see scripts/copy-swagger-assets.mjs)
+public/swagger-ui/
+
 # Environment
 .env
 .env.local

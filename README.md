@@ -82,7 +82,8 @@ npm run start:dev
 ```
 
 Abre la consola demo en [http://localhost:3000](http://localhost:3000) (crear, listar y obtener por id contra la API en vivo).  
-Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)  
+Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs) (también en el deploy: `/docs`)  
+
 Rutas de la API: `POST /users`, `GET /users?page&limit&createdAt`, `GET /users/:id`  
 UI del emulador: `http://localhost:4000`
 
