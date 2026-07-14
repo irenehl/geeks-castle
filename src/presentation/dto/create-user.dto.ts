@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -28,6 +29,12 @@ const emptyToUndefined = ({ value }: { value: unknown }): unknown => {
 };
 
 export class CreateUserDto {
+  @ApiProperty({
+    example: 'alice',
+    description: '3–32 caracteres; solo letras, números y guion bajo',
+    minLength: 3,
+    maxLength: 32,
+  })
   @Transform(trimString)
   @IsString()
   @IsNotEmpty({ message: 'username is required' })
@@ -42,6 +49,11 @@ export class CreateUserDto {
   })
   username!: string;
 
+  @ApiProperty({
+    example: 'alice@example.com',
+    description: 'Email válido; máx. 254 caracteres',
+    maxLength: 254,
+  })
   @Transform(trimString)
   @IsEmail({}, { message: 'email must be a valid email address' })
   @IsNotEmpty({ message: 'email is required' })
@@ -50,6 +62,13 @@ export class CreateUserDto {
   })
   email!: string;
 
+  @ApiPropertyOptional({
+    example: 'MySecurePass1!',
+    description:
+      'Opcional. Si se omite, el servidor genera una contraseña temporal segura. Si se envía: 8–128 caracteres con mayúscula, minúscula, dígito y símbolo.',
+    minLength: 8,
+    maxLength: 128,
+  })
   @Transform(emptyToUndefined)
   @IsOptional()
   @IsString()
