@@ -18,9 +18,10 @@ describe('User entity', () => {
       email: 'alice@example.com',
     });
 
-    user.updatePassword('hashed');
+    user.updatePassword('hashed', true);
 
     expect(user.hasPassword()).toBe(true);
     expect(user.password).toBe('hashed');
+    expect(user.mustChangePassword).toBe(true);
   });
 });
