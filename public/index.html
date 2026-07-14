@@ -6,7 +6,7 @@
     <title>Prueba Técnica</title>
     <meta
       name="description"
-      content="Consola de prensa para la API NestJS user-service. Añade un usuario, genera una contraseña segura o consulta un registro por serial."
+      content="Consola demo para la API NestJS user-service. Agrega un usuario, genera una contraseña segura o consulta un registro por ID."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:opsz,wght@10..72,500;10..72,700;10..72,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=20260714config" />
+    <link rel="stylesheet" href="/styles.css?v=20260714page1" />
   </head>
   <body>
     <div class="backdrop" aria-hidden="true">
@@ -27,14 +27,14 @@
       <header class="masthead">
         <div class="masthead-top">
           <p class="imprint">user-service</p>
-          <p class="serial">SER. N.º 0001 · HOST LOCAL · REV 2026</p>
+          <p class="serial">SER. No. 0001 · HOST LOCAL · REV 2026</p>
         </div>
         <h1 class="wordmark">
           <span class="wordmark-line">Prueba</span>
           <span class="wordmark-line wordmark-line--ember">Técnica</span>
         </h1>
         <div class="stamp" aria-hidden="true">
-          <span class="stamp-ring">AÑADIDO · EN · SITIO</span>
+          <span class="stamp-ring">CREADO · OK</span>
           <span class="stamp-core">201</span>
         </div>
       </header>
@@ -43,7 +43,7 @@
         <p class="station-no" aria-hidden="true">01</p>
         <div class="station-body">
           <div class="station-head">
-            <h2 id="create-heading">Añadir un registro</h2>
+            <h2 id="create-heading">Agregar un registro</h2>
             <p class="route"><code>POST /users</code></p>
           </div>
 
@@ -87,19 +87,44 @@
                 Contraseña
                 <span class="optional">escríbela tú, o déjala en blanco</span>
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autocomplete="new-password"
-                maxlength="128"
-                aria-describedby="password-hint password-error"
-                placeholder="en blanco = la prensa genera una"
-              />
+              <div class="password-row">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  maxlength="128"
+                  aria-describedby="password-hint password-error"
+                  placeholder="en blanco = el servidor genera una"
+                />
+                <button
+                  type="button"
+                  class="btn-ghost password-toggle"
+                  id="password-toggle"
+                  aria-controls="password"
+                  aria-pressed="false"
+                  aria-label="Mostrar contraseña"
+                >
+                  <span class="password-toggle-icon" aria-hidden="true">
+                    <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M3 3l18 18" />
+                      <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                      <path d="M9.4 5.5A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.2 3.2" />
+                      <path d="M6.7 6.7C4.1 8.5 2 12 2 12s3.5 7 10 7a10.4 10.4 0 0 0 4.3-.9" />
+                    </svg>
+                  </span>
+                  <span class="password-toggle-label">Ver</span>
+                </button>
+              </div>
               <p class="field-hint" id="password-hint">
-                En blanco, el servidor genera una contraseña segura y guarda solo
-                su hash. Si defines una: 8 o más caracteres con mayúscula,
-                minúscula, un dígito y un símbolo
+                En blanco, el servidor genera una contraseña temporal segura,
+                la muestra <strong>una sola vez</strong> en el resultado y
+                guarda solo el hash. Si defines una: 8 o más caracteres con
+                mayúscula, minúscula, un dígito y un símbolo
                 <span class="mono">!@#$%^&amp;*()_+-=[]{}</span>.
               </p>
               <p class="field-error" id="password-error" role="alert" hidden></p>
@@ -107,7 +132,7 @@
 
             <div class="actions">
               <button type="submit" class="btn-primary" id="create-submit">
-                <span class="btn-label">Añadir registro</span>
+                <span class="btn-label">Agregar registro</span>
                 <span class="btn-key" aria-hidden="true">↵</span>
               </button>
             </div>
@@ -119,7 +144,7 @@
 
       <div class="divider" aria-hidden="true">
         <span class="divider-tick"></span>
-        <span class="divider-word">golpe</span>
+        <span class="divider-word">crear</span>
         <span class="divider-tick"></span>
       </div>
 
@@ -133,7 +158,7 @@
 
           <form id="lookup-form" novalidate>
             <div class="field" data-field="userId">
-              <label for="user-id">Serial (id de usuario)</label>
+              <label for="user-id">ID de usuario</label>
               <div class="id-row">
                 <input
                   id="user-id"
@@ -150,11 +175,11 @@
                   id="use-last-id"
                   hidden
                 >
-                  Último añadido
+                  Último creado
                 </button>
               </div>
               <p class="field-hint" id="userId-hint">
-                El UUID v4 que devolvió la estación uno.
+                El UUID v4 que devolvió la sección de crear.
               </p>
               <p class="field-error" id="userId-error" role="alert" hidden></p>
             </div>
@@ -173,7 +198,7 @@
 
       <div class="divider" aria-hidden="true">
         <span class="divider-tick"></span>
-        <span class="divider-word">tirada</span>
+        <span class="divider-word">listar</span>
         <span class="divider-tick"></span>
       </div>
 
@@ -181,21 +206,68 @@
         <p class="station-no" aria-hidden="true">03</p>
         <div class="station-body">
           <div class="station-head">
-            <h2 id="list-heading">Listar todos los usuarios</h2>
+            <h2 id="list-heading">Listar usuarios</h2>
             <p class="route"><code>GET /users</code></p>
           </div>
 
           <p class="station-lede">
-            Trae el listado completo de la tirada. Sin serial: todos los
-            registros, con conteo y JSON en el panel de resultado.
+            Listado paginado (por defecto página 1, 10 por página). Opcional:
+            filtrar por día de <span class="mono">createdAt</span>.
           </p>
 
-          <div class="actions">
-            <button type="button" class="btn-primary" id="list-all">
-              <span class="btn-label">Listar todos</span>
-              <span class="btn-key" aria-hidden="true">≡</span>
-            </button>
-          </div>
+          <form id="list-form" novalidate>
+            <div class="list-filters">
+              <div class="field" data-field="page">
+                <label for="list-page">Página</label>
+                <input
+                  id="list-page"
+                  name="page"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  step="1"
+                  value="1"
+                  required
+                />
+              </div>
+              <div class="field" data-field="limit">
+                <label for="list-limit">Límite</label>
+                <input
+                  id="list-limit"
+                  name="limit"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  max="100"
+                  step="1"
+                  value="10"
+                  required
+                />
+              </div>
+              <div class="field" data-field="createdAt">
+                <label for="list-created-at">
+                  Fecha
+                  <span class="optional">opcional · día UTC</span>
+                </label>
+                <input
+                  id="list-created-at"
+                  name="createdAt"
+                  type="date"
+                  aria-describedby="createdAt-hint"
+                />
+                <p class="field-hint" id="createdAt-hint">
+                  Filtra usuarios creados ese día (UTC).
+                </p>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn-primary" id="list-all">
+                <span class="btn-label">Listar</span>
+                <span class="btn-key" aria-hidden="true">≡</span>
+              </button>
+            </div>
+          </form>
 
           <div class="result" id="list-result" hidden aria-live="polite"></div>
         </div>
@@ -203,7 +275,7 @@
 
       <div class="divider" aria-hidden="true">
         <span class="divider-tick"></span>
-        <span class="divider-word">placa</span>
+        <span class="divider-word">info</span>
         <span class="divider-tick"></span>
       </div>
 
@@ -216,8 +288,8 @@
           </div>
 
           <p class="station-lede">
-            Placa de especificación del user-service: cómo está armado el
-            backend detrás de esta consola.
+            Resumen del user-service: cómo está armado el backend detrás de esta
+            consola.
           </p>
 
           <dl class="tech-plate">
@@ -261,8 +333,8 @@
               <dd>
                 Crear usuario > evento
                 <span class="mono">user.created</span> > si falta contraseña,
-                generar una segura > hash bcrypt > actualizar documento en
-                Firestore
+                generar una temporal segura > hash bcrypt > actualizar documento
+                > devolver el plain <strong>una sola vez</strong> en el create
               </dd>
             </div>
 
@@ -270,11 +342,14 @@
               <dt>Endpoints</dt>
               <dd>
                 <ul class="tech-list tech-list--routes">
-                  <li><span class="mono">POST /users</span> - añadir usuario</li>
+                  <li><span class="mono">POST /users</span> - agregar usuario</li>
                   <li>
                     <span class="mono">GET /users/:id</span> - consultar por UUID
                   </li>
-                  <li><span class="mono">GET /users</span> - listar todos</li>
+                  <li>
+                    <span class="mono">GET /users</span> - listar paginado
+                    (<span class="mono">?page&amp;limit&amp;createdAt</span>
+                  </li>
                 </ul>
               </dd>
             </div>
@@ -345,6 +420,6 @@ npm run start:dev</code></pre>
         </div>
       </section>
     </main>
-    <script src="/app.js?v=20260714config" defer></script>
+    <script src="/app.js?v=20260714page1" defer></script>
   </body>
 </html>

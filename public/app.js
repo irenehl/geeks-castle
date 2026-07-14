@@ -31,7 +31,11 @@
   const listResult = document.getElementById("list-result");
   const createSubmit = document.getElementById("create-submit");
   const lookupSubmit = document.getElementById("lookup-submit");
+  const listForm = document.getElementById("list-form");
   const listAllButton = document.getElementById("list-all");
+  const listPageInput = document.getElementById("list-page");
+  const listLimitInput = document.getElementById("list-limit");
+  const listCreatedAtInput = document.getElementById("list-created-at");
   const userIdInput = document.getElementById("user-id");
   const useLastId = document.getElementById("use-last-id");
 
@@ -40,6 +44,7 @@
     email: document.getElementById("email"),
     password: document.getElementById("password"),
   };
+  const passwordToggle = document.getElementById("password-toggle");
 
   function getLastCreatedId() {
     return sessionStorage.getItem(STORAGE_KEY);
@@ -108,10 +113,10 @@
       return `El usuario debe tener al menos ${RULES.username.min} caracteres.`;
     }
     if (username.length > RULES.username.max) {
-      return `El usuario debe tener como máximo ${RULES.username.max} caracteres.`;
+      return `El usuario debe tener máximo ${RULES.username.max} caracteres.`;
     }
     if (!RULES.username.pattern.test(username)) {
-      return "El usuario solo puede contener letras, números y guion bajo.";
+      return "El usuario solo puede tener letras, números y guion bajo.";
     }
     return null;
   }
@@ -120,7 +125,7 @@
     const email = value.trim();
     if (!email) return "El correo es obligatorio.";
     if (email.length > RULES.email.max) {
-      return `El correo debe tener como máximo ${RULES.email.max} caracteres.`;
+      return `El correo debe tener máximo ${RULES.email.max} caracteres.`;
     }
     if (!RULES.email.pattern.test(email)) {
       return "Ingresa un correo válido.";
@@ -134,19 +139,19 @@
       return `La contraseña debe tener al menos ${RULES.password.min} caracteres.`;
     }
     if (value.length > RULES.password.max) {
-      return `La contraseña debe tener como máximo ${RULES.password.max} caracteres.`;
+      return `La contraseña debe tener máximo ${RULES.password.max} caracteres.`;
     }
     if (!RULES.password.pattern.test(value)) {
-      return "La contraseña necesita mayúscula, minúscula, un dígito y un símbolo (!@#$%^&*()_+-=[]{}).";
+      return "La contraseña debe incluir mayúscula, minúscula, un dígito y un símbolo (!@#$%^&*()_+-=[]{}).";
     }
     return null;
   }
 
   function validateUserId(value) {
     const id = value.trim();
-    if (!id) return "El id de usuario es obligatorio.";
+    if (!id) return "El ID de usuario es obligatorio.";
     if (!RULES.userId.pattern.test(id)) {
-      return "El id debe ser un UUID v4 (el de crear).";
+      return "El ID debe ser un UUID v4 (el que devolvió crear).";
     }
     return null;
   }
@@ -193,28 +198,53 @@
 
   function summarizeCreate(data) {
     if (data.passwordGenerated) {
-      return `Añadido ${data.username}. La prensa generó una contraseña segura y guardó solo su hash.`;
+      return `Se agregó ${data.username}. Contraseña temporal generada: guárdala ahora; no la volveremos a mostrar.`;
     }
-    return `Añadido ${data.username} con la contraseña que definiste. Guardada como hash.`;
+    return `Se agregó ${data.username} con la contraseña que definiste. Guardada como hash.`;
   }
 
   function summarizeLookup(data) {
     const passwordNote = data.hasPassword
-      ? "Contraseña en el registro."
-      : "Aún sin contraseña en el registro.";
+      ? data.mustChangePassword
+        ? "Contraseña temporal pendiente de cambio."
+        : "Contraseña en el registro."
+      : "Todavía sin contraseña en el registro.";
     return `${data.username} · ${data.email}. ${passwordNote}`;
   }
 
-  function summarizeList(data) {
-    const count = Array.isArray(data) ? data.length : 0;
-    if (count === 0) return "La prensa está vacía - aún no hay registros.";
-    if (count === 1) return "Un registro en la tirada.";
-    return `${count} registros en la tirada.`;
+  function summarizeList(body) {
+    const total = Number(body?.meta?.total ?? 0);
+    const page = Number(body?.meta?.page ?? 1);
+    const totalPages = Number(body?.meta?.totalPages ?? 0);
+    if (total === 0) return "El listado está vacío: no hay registros para estos filtros.";
+    if (total === 1) return "Hay 1 registro (página 1 de 1).";
+    return `Hay ${total} registros · página ${page} de ${totalPages || 1}.`;
   }
 
-  function listCountMeta(data, status) {
-    const count = Array.isArray(data) ? data.length : 0;
-    return `HTTP ${status} · GET /users · ${count} ${count === 1 ? "registro" : "registros"}`;
+  function listCountMeta(body, status) {
+    const page = Number(body?.meta?.page ?? 1);
+    const limit = Number(body?.meta?.limit ?? 10);
+    const total = Number(body?.meta?.total ?? 0);
+    const shown = Array.isArray(body?.data) ? body.data.length : 0;
+    return `HTTP ${status} · GET /users · pág ${page} · limit ${limit} · ${shown}/${total}`;
+  }
+
+  function readListQuery() {
+    const page = Math.max(1, Number.parseInt(listPageInput.value, 10) || 1);
+    const limit = Math.min(
+      100,
+      Math.max(1, Number.parseInt(listLimitInput.value, 10) || 10),
+    );
+    listPageInput.value = String(page);
+    listLimitInput.value = String(limit);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    const createdAt = listCreatedAtInput.value.trim();
+    if (createdAt) params.set("createdAt", createdAt);
+    return params;
   }
 
   function setBusy(button, busyText) {
@@ -236,15 +266,55 @@
     }
   }
 
-  function renderResult(el, { ok, title, meta, body }) {
+  function renderResult(el, { ok, title, meta, body, reveal }) {
     el.hidden = false;
     el.classList.toggle("is-ok", ok);
     el.classList.toggle("is-error", !ok);
+
+    const revealHtml =
+      reveal?.password
+        ? `
+      <div class="temp-password">
+        <p class="temp-password-label">Contraseña temporal (solo esta vez)</p>
+        <div class="temp-password-row">
+          <code class="temp-password-value">${escapeHtml(reveal.password)}</code>
+          <button type="button" class="btn-ghost temp-password-copy" data-copy-temp>
+            Copiar
+          </button>
+        </div>
+        ${
+          reveal.message
+            ? `<p class="temp-password-warn">${escapeHtml(reveal.message)}</p>`
+            : ""
+        }
+      </div>`
+        : "";
+
     el.innerHTML = `
       <p class="result-status">${escapeHtml(title)}</p>
       ${meta ? `<p class="result-meta">${escapeHtml(meta)}</p>` : ""}
+      ${revealHtml}
       <pre>${escapeHtml(formatPayload(body))}</pre>
     `;
+
+    const copyBtn = el.querySelector("[data-copy-temp]");
+    if (copyBtn && reveal?.password) {
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(reveal.password);
+          copyBtn.textContent = "Copiado";
+          setTimeout(() => {
+            copyBtn.textContent = "Copiar";
+          }, 1600);
+        } catch {
+          copyBtn.textContent = "Error";
+          setTimeout(() => {
+            copyBtn.textContent = "Copiar";
+          }, 1600);
+        }
+      });
+    }
+
     el.style.animation = "none";
     void el.offsetWidth;
     el.style.animation = "";
@@ -308,24 +378,42 @@
     return { response, body };
   }
 
+  function fieldErrorFor(name, value) {
+    if (name === "username") return validateUsername(value);
+    if (name === "email") return validateEmail(value);
+    if (name === "password") return validatePassword(value);
+    return null;
+  }
+
   for (const [name, input] of Object.entries(createFields)) {
     input.addEventListener("blur", () => {
-      const value = input.value;
-      let error = null;
-      if (name === "username") error = validateUsername(value);
-      if (name === "email") error = validateEmail(value);
-      if (name === "password") error = validatePassword(value);
-      setFieldError(name, error);
+      setFieldError(name, fieldErrorFor(name, input.value));
     });
 
     input.addEventListener("input", () => {
-      if (document.querySelector(`[data-field="${name}"]`)?.classList.contains("is-invalid")) {
-        let error = null;
-        if (name === "username") error = validateUsername(input.value);
-        if (name === "email") error = validateEmail(input.value);
-        if (name === "password") error = validatePassword(input.value);
-        setFieldError(name, error);
+      const field = document.querySelector(`[data-field="${name}"]`);
+      const alreadyInvalid = field?.classList.contains("is-invalid");
+      // Password: show rules as soon as they type something (blank stays valid).
+      const livePassword =
+        name === "password" && input.value.length > 0;
+      if (alreadyInvalid || livePassword) {
+        setFieldError(name, fieldErrorFor(name, input.value));
       }
+    });
+  }
+
+  if (passwordToggle && createFields.password) {
+    passwordToggle.addEventListener("click", () => {
+      const input = createFields.password;
+      const reveal = input.type === "password";
+      input.type = reveal ? "text" : "password";
+      passwordToggle.setAttribute("aria-pressed", reveal ? "true" : "false");
+      passwordToggle.setAttribute(
+        "aria-label",
+        reveal ? "Ocultar contraseña" : "Mostrar contraseña",
+      );
+      const label = passwordToggle.querySelector(".password-toggle-label");
+      if (label) label.textContent = reveal ? "Ocultar" : "Ver";
     });
   }
 
@@ -352,7 +440,7 @@
       if (first) createFields[first].focus();
       renderResult(createResult, {
         ok: false,
-        title: "Corrige los campos marcados antes de añadir.",
+        title: "Corrige los campos marcados antes de agregar.",
         meta: "Validación en cliente · mismas reglas que la API",
         body: {
           statusCode: 400,
@@ -370,7 +458,7 @@
       payload.password = values.password;
     }
 
-    setBusy(createSubmit, "Añadiendo…");
+    setBusy(createSubmit, "Agregando…");
 
     try {
       const { response, body } = await request("/users", {
@@ -402,14 +490,22 @@
       renderResult(createResult, {
         ok: true,
         title: summarizeCreate(body),
-        meta: `HTTP ${response.status} · id listo para consultar`,
+        meta: body?.passwordGenerated
+          ? `HTTP ${response.status} · Contraseña temporal visible una sola vez`
+          : `HTTP ${response.status} · ID listo para consultar`,
         body,
+        reveal: body?.temporaryPassword
+          ? {
+              password: body.temporaryPassword,
+              message: body.message,
+            }
+          : undefined,
       });
     } catch {
       renderResult(createResult, {
         ok: false,
         title: "No se pudo contactar la API.",
-        meta: "Confirma que el servidor Nest está en marcha e inténtalo de nuevo.",
+        meta: "Verifica que el servidor Nest esté corriendo e inténtalo de nuevo.",
         body: { error: "NetworkError" },
       });
     } finally {
@@ -425,7 +521,7 @@
       userIdInput.focus();
       renderResult(lookupResult, {
         ok: false,
-        title: "Ingresa un serial UUID v4 válido antes de consultar.",
+        title: "Ingresa un ID UUID v4 válido antes de consultar.",
         meta: "Validación en cliente · igual que ParseUUIDPipe",
         body: { statusCode: 400, message: "user id must be a UUID v4" },
       });
@@ -460,7 +556,7 @@
       renderResult(lookupResult, {
         ok: false,
         title: "No se pudo contactar la API.",
-        meta: "Confirma que el servidor Nest está en marcha e inténtalo de nuevo.",
+        meta: "Verifica que el servidor Nest esté corriendo e inténtalo de nuevo.",
         body: { error: "NetworkError" },
       });
     } finally {
@@ -476,11 +572,13 @@
     userIdInput.focus();
   });
 
-  listAllButton.addEventListener("click", async () => {
+  listForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
     setBusy(listAllButton, "Listando…");
 
     try {
-      const { response, body } = await request("/users");
+      const params = readListQuery();
+      const { response, body } = await request(`/users?${params.toString()}`);
 
       if (!response.ok) {
         const messages = validationMessages(body);
@@ -493,18 +591,17 @@
         return;
       }
 
-      const users = Array.isArray(body) ? body : [];
       renderResult(listResult, {
         ok: true,
-        title: summarizeList(users),
-        meta: listCountMeta(users, response.status),
-        body: users,
+        title: summarizeList(body),
+        meta: listCountMeta(body, response.status),
+        body,
       });
     } catch {
       renderResult(listResult, {
         ok: false,
         title: "No se pudo contactar la API.",
-        meta: "Confirma que el servidor Nest está en marcha e inténtalo de nuevo.",
+        meta: "Verifica que el servidor Nest esté corriendo e inténtalo de nuevo.",
         body: { error: "NetworkError" },
       });
     } finally {
