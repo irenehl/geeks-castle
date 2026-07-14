@@ -1,109 +1,113 @@
 # GeeksCastle Backend Challenge 2026
 
-NestJS + TypeScript + Firebase (Firestore) solution for the Backend Developer Challenge 2026. Implements **Clean Architecture**. Creating a user without a password emits a domain event that generates a secure password (bcrypt-hashed) and updates the Firestore document.
+Solución en NestJS + TypeScript + Firebase (Firestore) para el Backend Developer Challenge 2026. Implementa **Clean Architecture**. Al crear un usuario sin contraseña se emite un evento de dominio que genera una contraseña segura (hasheada con bcrypt) y actualiza el documento en Firestore.
 
-## Challenge requirements → where they live
+## Requisitos del challenge → dónde están
 
-| # | Requirement | Status | Where |
+| # | Requisito | Estado | Dónde |
 |---|---|---|---|
-| 1 | Language: **TypeScript** | ✅ | whole project, `tsconfig.json` strict |
-| 2 | Framework: **NestJS** | ✅ | `src/` Nest modules, controllers, providers |
-| 3 | Database: **Firebase** (Admin SDK) | ✅ | `src/infrastructure/firebase/*`, `firebase-admin` |
+| 1 | Lenguaje: **TypeScript** | ✅ | todo el proyecto, `tsconfig.json` en modo strict |
+| 2 | Framework: **NestJS** | ✅ | módulos Nest, controllers y providers en `src/` |
+| 3 | Base de datos: **Firebase** (Admin SDK) | ✅ | `src/infrastructure/firebase/*`, `firebase-admin` |
 | 4 | **Clean Architecture** (domain / application / infrastructure / presentation) | ✅ | `src/domain`, `src/application`, `src/infrastructure`, `src/presentation` |
-| 5 | `User` entity: `id` (auto), `username`, `email`, `password` (optional at create) | ✅ | `src/domain/entities/user.entity.ts`, `create-user.dto.ts` |
-| 6 | If no password on insert, **generate one automatically** | ✅ | `create-user.use-case.ts` + `user-created.handler.ts` |
-| 7 | Generated password must be **secure** | ✅ | `password-generator.service.ts` (CSPRNG, all char classes, bcrypt) |
-| 8 | Record is **updated** with the generated password | ✅ | `update-user-password.use-case.ts` via repository `update()` |
-| 9 | An **event fires on insert** that generates the password and updates the record | ✅ | `user.created` via `@nestjs/event-emitter`, `UserCreatedHandler` |
-| 10 | Service to **insert a user** in Firebase | ✅ | `FirebaseUserRepository.create()` |
-| 11 | Basic **docs** to configure and run | ✅ | this README + `.env.example` + emulator scripts |
-| 12 | **Unit tests** for key functions (password generation, user update) | ✅ | `*.spec.ts` (22 unit tests) + e2e in `test/` |
-| 13 | Hints: **bcrypt**, Firebase Admin SDK, **Firebase emulator** | ✅ | `bcrypt`, Admin SDK, `firebase.json` + `npm run emulator` |
+| 5 | Entidad `User`: `id` (auto), `username`, `email`, `password` (opcional al crear) | ✅ | `src/domain/entities/user.entity.ts`, `create-user.dto.ts` |
+| 6 | Si no hay contraseña al insertar, **generar una automáticamente** | ✅ | `create-user.use-case.ts` + `user-created.handler.ts` |
+| 7 | La contraseña generada debe ser **segura** | ✅ | `password-generator.service.ts` (CSPRNG, todas las clases de caracteres, bcrypt) |
+| 8 | El registro se **actualiza** con la contraseña generada | ✅ | `update-user-password.use-case.ts` vía `update()` del repositorio |
+| 9 | Un **evento se dispara al insertar** que genera la contraseña y actualiza el registro | ✅ | `user.created` vía `@nestjs/event-emitter`, `UserCreatedHandler` |
+| 10 | Servicio para **insertar un usuario** en Firebase | ✅ | `FirebaseUserRepository.create()` |
+| 11 | **Documentación** básica para configurar y ejecutar | ✅ | este README + `.env.example` + scripts del emulador |
+| 12 | **Tests unitarios** de las funciones clave (generación de contraseña, actualización de usuario) | ✅ | `*.spec.ts` (22 tests unitarios) + e2e en `test/` |
+| 13 | Hints: **bcrypt**, Firebase Admin SDK, **emulador de Firebase** | ✅ | `bcrypt`, Admin SDK, `firebase.json` + `npm run emulator` |
 
-A single `npm run start:dev` also serves a demo console (**The Credential Press**) at `/` for exercising the endpoints; the API routes are unchanged.
+Un solo `npm run start:dev` también sirve una consola demo en `/` para probar los endpoints; las rutas de la API no cambian.
 
 ## Stack
 
-| Requirement | Choice |
+| Requisito | Elección |
 |---|---|
-| Language | TypeScript |
+| Lenguaje | TypeScript |
 | Framework | NestJS |
-| Database | Firebase Firestore (Admin SDK) |
-| Architecture | Clean Architecture |
-| Password hashing | bcrypt |
-| Events | `@nestjs/event-emitter` |
+| Base de datos | Firebase Firestore (Admin SDK) |
+| Arquitectura | Clean Architecture |
+| Hash de contraseñas | bcrypt |
+| Eventos | `@nestjs/event-emitter` |
 
-## Project structure
+## Estructura del proyecto
 
 ```
 src/
-├── domain/                  # Entities, repository contracts, domain events
-├── application/             # Use cases, password service, event handlers
-├── infrastructure/          # Firebase wiring + Firestore repository
-└── presentation/            # Controllers, DTOs, Nest modules
+├── domain/                  # Entidades, contratos del repositorio, eventos de dominio
+├── application/             # Casos de uso, servicio de contraseñas, handlers de eventos
+├── infrastructure/          # Wiring de Firebase + repositorio Firestore
+└── presentation/            # Controllers, DTOs, módulos Nest
 ```
 
-**Flow when password is omitted**
+**Flujo cuando se omite la contraseña**
 
-1. `POST /users` persists the user in Firestore (no password).
-2. `user.created` domain event is emitted.
-3. `UserCreatedHandler` generates a secure password, hashes it with bcrypt, and updates the Firestore document.
+1. `POST /users` persiste el usuario en Firestore (sin contraseña).
+2. Se emite el evento de dominio `user.created`.
+3. `UserCreatedHandler` genera una contraseña temporal segura, la hashea con bcrypt, actualiza el documento con `mustChangePassword: true` y devuelve el valor en claro.
+4. La respuesta del create incluye `temporaryPassword` **una sola vez** (nunca se guarda en claro; nunca aparece en GET).
 
-## Prerequisites
+## Requisitos previos
 
 - Node.js 20+
 - npm
-- Java 11+ (required by the Firestore emulator)
-- Firebase CLI is included as a project dependency (`npx firebase ...`)
+- Java 11+ (requerido por el emulador de Firestore)
+- Firebase CLI está incluida como dependencia del proyecto (`npx firebase ...`)
 
-## Setup
+## Configuración
 
 ```bash
 npm install
 cp .env.example .env
 ```
 
-Default `.env` points at the local Firestore emulator.
+El `.env` por defecto apunta al emulador local de Firestore.
 
-## Run with Firebase Emulator
+## Ejecutar con el emulador de Firebase
 
-**Terminal 1 — Firestore emulator**
+**Terminal 1 — Emulador de Firestore**
 
 ```bash
 npm run emulator
-# or: firebase emulators:start --only firestore
+# o: firebase emulators:start --only firestore
 ```
 
-**Terminal 2 — NestJS API**
+**Terminal 2 — API NestJS**
 
 ```bash
 npm run start:dev
 ```
 
-Open the demo console, **The Credential Press**, at [http://localhost:3000](http://localhost:3000) (create, list, and fetch by id against the live API).  
-API routes: `POST /users`, `GET /users`, `GET /users/:id`  
-Emulator UI: `http://localhost:4000`
+Abre la consola demo en [http://localhost:3000](http://localhost:3000) (crear, listar y obtener por id contra la API en vivo).  
+Swagger UI: [http://localhost:3000/docs](http://localhost:3000/docs)  
+Rutas de la API: `POST /users`, `GET /users?page&limit&createdAt`, `GET /users/:id`  
+UI del emulador: `http://localhost:4000`
 
-> The API works without the emulator too: `npm run start:dev` alone boots Nest and serves the console. Without a running Firestore (emulator or credentials) the create call will error when it writes, which the console surfaces as a `JAMMED` result. Start the emulator (or set production credentials) for full create/fetch flows.
+> La API también funciona sin el emulador: solo `npm run start:dev` arranca Nest y sirve la consola. Sin Firestore en ejecución (emulador o credenciales), la creación fallará al escribir; la consola lo muestra como resultado `ERROR`. Arranca el emulador (o configura credenciales de producción) para los flujos completos de crear/obtener.
 
-## Demo console UI (The Credential Press)
+## Consola demo (UI)
 
-Static HTML/CSS/JS in `public/` is served by Nest at `/` (same process as the API), so a single `npm run start:dev` gives you the UI and the API. Use the stations to call `POST /users` (mint a record), `GET /users` (list all), and `GET /users/:id` (pull a record) without a separate frontend app. Client and server share the same validation rules, with inline field errors on blur and submit, and API `400` messages mapped back onto the matching fields.
+HTML/CSS/JS estático en `public/` servido por Nest en `/` (mismo proceso que la API), así que un solo `npm run start:dev` te da la UI y la API. Usa las secciones para llamar a `POST /users` (crear usuario), `GET /users` (listar paginado + filtro `createdAt`) y `GET /users/:id` (obtener por id) sin una app frontend aparte. Cliente y servidor comparten las mismas reglas de validación, con errores en línea al blur y al enviar, y los mensajes `400` de la API mapeados a los campos correspondientes.
 
-## Validation rules
+## Reglas de validación
 
-| Field | Rules |
+| Campo | Reglas |
 |---|---|
-| `username` | Required; trimmed; 3–32 chars; `[a-zA-Z0-9_]` only |
-| `email` | Required; trimmed; valid email; max 254 |
-| `password` | Optional. Empty/omit → server generates a secure password. If set: 8–128 chars with upper, lower, digit, and a symbol from `!@#$%^&*()_+-=[]{}` |
-| `:id` (GET) | Must be a UUID v4 |
+| `username` | Obligatorio; sin espacios extremos; 3–32 caracteres; solo `[a-zA-Z0-9_]` |
+| `email` | Obligatorio; sin espacios extremos; email válido; máx. 254 |
+| `password` | Opcional. Vacío/omitido → el servidor genera una contraseña temporal segura (se muestra una sola vez en el create). Si se envía: 8–128 caracteres con mayúscula, minúscula, dígito y un símbolo de `!@#$%^&*()_+-=[]{}` |
+| `:id` (GET) | Debe ser un UUID v4 |
 
-Invalid create bodies return Nest `400` with `message: string[]`. Invalid ids return `400` from `ParseUUIDPipe`.
+Los bodies de creación inválidos devuelven Nest `400` con `message: string[]`. Los ids inválidos devuelven `400` desde `ParseUUIDPipe`.
 
 ## API
 
-### Create user
+Documentación interactiva (OpenAPI / Swagger) en `/docs` cuando la app está en marcha.
+
+### Crear usuario
 
 ```http
 POST /users
@@ -115,7 +119,7 @@ Content-Type: application/json
 }
 ```
 
-Optional password:
+Contraseña opcional:
 
 ```json
 {
@@ -125,18 +129,33 @@ Optional password:
 }
 ```
 
-Response:
+Respuesta (contraseña generada — temporal visible **solo aquí**):
 
 ```json
 {
   "id": "uuid",
   "username": "alice",
   "email": "alice@example.com",
-  "passwordGenerated": true
+  "passwordGenerated": true,
+  "mustChangePassword": true,
+  "temporaryPassword": "Xk9!mP2qR7$vL4nW",
+  "message": "Guarda esta contraseña temporal ahora. No la volveremos a mostrar; cámbiala en el primer acceso."
 }
 ```
 
-### Get user
+Respuesta (el cliente envió su contraseña):
+
+```json
+{
+  "id": "uuid",
+  "username": "bob",
+  "email": "bob@example.com",
+  "passwordGenerated": false,
+  "mustChangePassword": false
+}
+```
+
+### Obtener usuario
 
 ```http
 GET /users/:id
@@ -147,28 +166,48 @@ GET /users/:id
   "id": "uuid",
   "username": "alice",
   "email": "alice@example.com",
-  "hasPassword": true
+  "hasPassword": true,
+  "mustChangePassword": true,
+  "createdAt": "2026-07-14T18:00:00.000Z"
 }
 ```
 
-### List users
+### Listar usuarios
 
 ```http
-GET /users
+GET /users?page=1&limit=10&createdAt=2026-07-14
 ```
+
+Query params (todos opcionales):
+
+| Param | Default | Descripción |
+| --- | --- | --- |
+| `page` | `1` | Página (≥ 1) |
+| `limit` | `10` | Ítems por página (1–100) |
+| `createdAt` | — | Día UTC (`YYYY-MM-DD` o ISO); filtra por fecha de creación |
 
 ```json
-[
-  {
-    "id": "uuid",
-    "username": "alice",
-    "email": "alice@example.com",
-    "hasPassword": true
+{
+  "data": [
+    {
+      "id": "uuid",
+      "username": "alice",
+      "email": "alice@example.com",
+      "hasPassword": true,
+      "mustChangePassword": true,
+      "createdAt": "2026-07-14T18:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1
   }
-]
+}
 ```
 
-Password hashes are never returned (same shape as `GET /users/:id`).
+Los hashes y `temporaryPassword` nunca se devuelven en GET (misma forma en list y get-by-id).
 
 ## Tests
 
@@ -177,19 +216,19 @@ npm test
 npm run test:cov
 ```
 
-Covered areas:
+Áreas cubiertas:
 
-- Secure password generation (character classes, uniqueness, bcrypt verify)
-- Create-user use case (optional password + event emission)
-- List-users use case (no password hashes in the response)
-- Create-user DTO validation (trim, optional password, complexity, username pattern)
-- Password update use case
-- `user.created` event handler
-- User domain entity
+- Generación segura de contraseñas (clases de caracteres, unicidad, verificación con bcrypt)
+- Caso de uso create-user (contraseña opcional + emisión de evento)
+- Caso de uso list-users (sin hashes de contraseña en la respuesta)
+- Validación del DTO create-user (trim, contraseña opcional, complejidad, patrón de username)
+- Caso de uso de actualización de contraseña
+- Handler del evento `user.created`
+- Entidad de dominio User
 
-## Production Firebase
+## Firebase en producción
 
-Set in `.env`:
+Configura en `.env`:
 
 ```env
 FIREBASE_USE_EMULATOR=false
@@ -198,18 +237,19 @@ FIREBASE_CLIENT_EMAIL=...
 FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
 
-## Design decisions
+## Decisiones de diseño
 
-1. **Event-driven password generation** — Matches the challenge: insert first, then an event generates/updates the password when it was omitted.
-2. **bcrypt hashes only** — Plain passwords are never stored; provided passwords are hashed before insert; generated ones are hashed in the event handler.
-3. **Repository port** — Domain depends on `UserRepository`; Firestore is an infrastructure detail.
-4. **`emitAsync`** — The create endpoint waits for the handler so a follow-up `GET` already sees `hasPassword: true`.
+1. **Generación de contraseña orientada a eventos** — Cumple el challenge: primero se inserta, luego un evento genera/actualiza la contraseña cuando se omitió.
+2. **Solo hashes bcrypt** — Las contraseñas en texto plano nunca se almacenan; las proporcionadas se hashean antes del insert; las generadas se hashean en el event handler.
+3. **Puerto del repositorio** — El dominio depende de `UserRepository`; Firestore es un detalle de infraestructura.
+4. **`emitAsync`** — El endpoint de creación espera al handler para devolver `temporaryPassword` en la misma respuesta y para que un `GET` posterior ya vea `hasPassword: true`.
+5. **Contraseña temporal (show-once)** — El plain solo viaja en la respuesta del `POST /users`; en DB queda el hash y `mustChangePassword`.
 
 ## Scripts
 
-| Script | Description |
+| Script | Descripción |
 |---|---|
-| `npm run start:dev` | NestJS watch mode |
-| `npm run emulator` | Firestore emulator |
-| `npm test` | Unit tests |
-| `npm run build` | Production build |
+| `npm run start:dev` | NestJS en modo watch (+ Swagger en `/docs`) |
+| `npm run emulator` | Emulador de Firestore |
+| `npm test` | Tests unitarios |
+| `npm run build` | Build de producción |
