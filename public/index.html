@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Prueba Técnica</title>
+    <meta
+      name="description"
+      content="Consola de prensa para la API NestJS user-service. Añade un usuario, genera una contraseña segura o consulta un registro por serial."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:opsz,wght@10..72,500;10..72,700;10..72,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css?v=20260714config" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <div class="measure measure--top"></div>
+      <div class="measure measure--side"></div>
+      <div class="grain"></div>
+    </div>
+
+    <main class="press">
+      <header class="masthead">
+        <div class="masthead-top">
+          <p class="imprint">user-service</p>
+          <p class="serial">SER. N.º 0001 · HOST LOCAL · REV 2026</p>
+        </div>
+        <h1 class="wordmark">
+          <span class="wordmark-line">Prueba</span>
+          <span class="wordmark-line wordmark-line--ember">Técnica</span>
+        </h1>
+        <div class="stamp" aria-hidden="true">
+          <span class="stamp-ring">AÑADIDO · EN · SITIO</span>
+          <span class="stamp-core">201</span>
+        </div>
+      </header>
+
+      <section class="station station--mint" aria-labelledby="create-heading">
+        <p class="station-no" aria-hidden="true">01</p>
+        <div class="station-body">
+          <div class="station-head">
+            <h2 id="create-heading">Añadir un registro</h2>
+            <p class="route"><code>POST /users</code></p>
+          </div>
+
+          <form id="create-form" novalidate>
+            <div class="field" data-field="username">
+              <label for="username">Usuario</label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                spellcheck="false"
+                maxlength="32"
+                required
+                aria-describedby="username-hint username-error"
+                placeholder="alice_01"
+              />
+              <p class="field-hint" id="username-hint">
+                De 3 a 32 caracteres. Letras, números y guion bajo.
+              </p>
+              <p class="field-error" id="username-error" role="alert" hidden></p>
+            </div>
+
+            <div class="field" data-field="email">
+              <label for="email">Correo</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                maxlength="254"
+                required
+                aria-describedby="email-error"
+                placeholder="alice@example.com"
+              />
+              <p class="field-error" id="email-error" role="alert" hidden></p>
+            </div>
+
+            <div class="field" data-field="password">
+              <label for="password">
+                Contraseña
+                <span class="optional">escríbela tú, o déjala en blanco</span>
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                maxlength="128"
+                aria-describedby="password-hint password-error"
+                placeholder="en blanco = la prensa genera una"
+              />
+              <p class="field-hint" id="password-hint">
+                En blanco, el servidor genera una contraseña segura y guarda solo
+                su hash. Si defines una: 8 o más caracteres con mayúscula,
+                minúscula, un dígito y un símbolo
+                <span class="mono">!@#$%^&amp;*()_+-=[]{}</span>.
+              </p>
+              <p class="field-error" id="password-error" role="alert" hidden></p>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn-primary" id="create-submit">
+                <span class="btn-label">Añadir registro</span>
+                <span class="btn-key" aria-hidden="true">↵</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="result" id="create-result" hidden aria-live="polite"></div>
+        </div>
+      </section>
+
+      <div class="divider" aria-hidden="true">
+        <span class="divider-tick"></span>
+        <span class="divider-word">golpe</span>
+        <span class="divider-tick"></span>
+      </div>
+
+      <section class="station station--pull" aria-labelledby="lookup-heading">
+        <p class="station-no" aria-hidden="true">02</p>
+        <div class="station-body">
+          <div class="station-head">
+            <h2 id="lookup-heading">Consultar un registro</h2>
+            <p class="route"><code>GET /users/:id</code></p>
+          </div>
+
+          <form id="lookup-form" novalidate>
+            <div class="field" data-field="userId">
+              <label for="user-id">Serial (id de usuario)</label>
+              <div class="id-row">
+                <input
+                  id="user-id"
+                  name="userId"
+                  type="text"
+                  spellcheck="false"
+                  required
+                  aria-describedby="userId-hint userId-error"
+                  placeholder="xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxxxxxx"
+                />
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  id="use-last-id"
+                  hidden
+                >
+                  Último añadido
+                </button>
+              </div>
+              <p class="field-hint" id="userId-hint">
+                El UUID v4 que devolvió la estación uno.
+              </p>
+              <p class="field-error" id="userId-error" role="alert" hidden></p>
+            </div>
+
+            <div class="actions">
+              <button type="submit" class="btn-primary" id="lookup-submit">
+                <span class="btn-label">Consultar registro</span>
+                <span class="btn-key" aria-hidden="true">↵</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="result" id="lookup-result" hidden aria-live="polite"></div>
+        </div>
+      </section>
+
+      <div class="divider" aria-hidden="true">
+        <span class="divider-tick"></span>
+        <span class="divider-word">tirada</span>
+        <span class="divider-tick"></span>
+      </div>
+
+      <section class="station station--list" aria-labelledby="list-heading">
+        <p class="station-no" aria-hidden="true">03</p>
+        <div class="station-body">
+          <div class="station-head">
+            <h2 id="list-heading">Listar todos los usuarios</h2>
+            <p class="route"><code>GET /users</code></p>
+          </div>
+
+          <p class="station-lede">
+            Trae el listado completo de la tirada. Sin serial: todos los
+            registros, con conteo y JSON en el panel de resultado.
+          </p>
+
+          <div class="actions">
+            <button type="button" class="btn-primary" id="list-all">
+              <span class="btn-label">Listar todos</span>
+              <span class="btn-key" aria-hidden="true">≡</span>
+            </button>
+          </div>
+
+          <div class="result" id="list-result" hidden aria-live="polite"></div>
+        </div>
+      </section>
+
+      <div class="divider" aria-hidden="true">
+        <span class="divider-tick"></span>
+        <span class="divider-word">placa</span>
+        <span class="divider-tick"></span>
+      </div>
+
+      <section class="station station--tech" aria-labelledby="tech-heading">
+        <p class="station-no" aria-hidden="true">04</p>
+        <div class="station-body">
+          <div class="station-head">
+            <h2 id="tech-heading">Parte técnica</h2>
+            <p class="route"><code>src/ · Clean Architecture</code></p>
+          </div>
+
+          <p class="station-lede">
+            Placa de especificación del user-service: cómo está armado el
+            backend detrás de esta consola.
+          </p>
+
+          <dl class="tech-plate">
+            <div class="tech-row">
+              <dt>Stack</dt>
+              <dd>
+                NestJS · TypeScript · Firebase / Firestore (Admin SDK) · Clean
+                Architecture · bcrypt ·
+                <span class="mono">@nestjs/event-emitter</span>
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Capas</dt>
+              <dd>
+                <ul class="tech-list">
+                  <li>
+                    <span class="mono">domain/</span> - entidad
+                    <span class="mono">User</span>, contrato del repositorio,
+                    evento de dominio
+                  </li>
+                  <li>
+                    <span class="mono">application/</span> - casos de uso,
+                    generador de contraseña, handler de
+                    <span class="mono">user.created</span>
+                  </li>
+                  <li>
+                    <span class="mono">infrastructure/</span> - Firebase Admin +
+                    repositorio Firestore
+                  </li>
+                  <li>
+                    <span class="mono">presentation/</span> - controllers, DTOs,
+                    módulos Nest
+                  </li>
+                </ul>
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Flujo</dt>
+              <dd>
+                Crear usuario > evento
+                <span class="mono">user.created</span> > si falta contraseña,
+                generar una segura > hash bcrypt > actualizar documento en
+                Firestore
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Endpoints</dt>
+              <dd>
+                <ul class="tech-list tech-list--routes">
+                  <li><span class="mono">POST /users</span> - añadir usuario</li>
+                  <li>
+                    <span class="mono">GET /users/:id</span> - consultar por UUID
+                  </li>
+                  <li><span class="mono">GET /users</span> - listar todos</li>
+                </ul>
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Datos</dt>
+              <dd>
+                Colección Firestore
+                <span class="mono">users</span>. Emulador local si
+                <span class="mono">FIREBASE_USE_EMULATOR=true</span> (host en
+                <span class="mono">FIRESTORE_EMULATOR_HOST</span>); producción
+                con credenciales de servicio cuando el emulador está desactivado
+                (ver <span class="mono">.env</span>).
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Validaciones</dt>
+              <dd>
+                <ul class="tech-list">
+                  <li>
+                    <strong>username</strong> - 3-32 chars;
+                    <span class="mono">[a-zA-Z0-9_]</span>
+                  </li>
+                  <li>
+                    <strong>email</strong> - formato válido; máx. 254
+                  </li>
+                  <li>
+                    <strong>password</strong> - opcional; si viene: 8-128 chars
+                    con mayúscula, minúscula, dígito y símbolo
+                  </li>
+                  <li>
+                    <strong>:id</strong> - UUID v4 (
+                    <span class="mono">GET /users/:id</span>)
+                  </li>
+                </ul>
+              </dd>
+            </div>
+
+            <div class="tech-row">
+              <dt>Configuración</dt>
+              <dd>
+                <div class="code-block">
+                  <button
+                    type="button"
+                    class="code-block-copy"
+                    id="copy-config-commands"
+                    aria-label="Copiar comandos"
+                  >
+                    Copiar
+                  </button>
+                  <pre
+                    class="code-block-pre"
+                    id="config-commands"
+                  ><code># Emulador Firestore
+npm run emulator
+
+# API + consola (http://localhost:3000)
+npm run start:dev</code></pre>
+                </div>
+                <p class="code-block-note">
+                  Emulador UI:
+                  <span class="mono">http://localhost:4000</span>
+                </p>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js?v=20260714config" defer></script>
+  </body>
+</html>
